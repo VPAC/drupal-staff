@@ -6,6 +6,10 @@
  * Trivial ordering modifications by Lev Lafayette 2010: lev@vpac.org
  */
 
+function staff_init() {
+  drupal_add_css(drupal_get_path('module', 'staff') .'/staff-style.css');
+}
+
 /**
 * Display help and module information
 * @param section which section of the site we're displaying help

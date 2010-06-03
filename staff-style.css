@@ -1,0 +1,90 @@
+/**
+ * Staff
+ */
+
+div.staff-list {
+	margin-top:20px;
+}
+
+ul.staff-list-compact {
+	border-top:1px solid #d3e7f4;
+	margin-top:10px;
+	list-style-type:none;
+	padding-left:0px;
+}
+
+ul.staff-list-compact li {
+	background-image:none;
+	border-bottom:1px solid #d3e7f4;
+	margin-left:0px;
+	margin-bottom:0px;
+	margin-top:0px;
+	padding:3px 0px 3px 10px;
+}
+
+ul.staff-list-compact li.odd {
+	background-color: #edf5fa;
+}
+
+
+ul.staff-list-long {
+	border-top:1px solid #d3e7f4;
+	margin-top:10px;
+	list-style-type:none;
+	padding-left:0px;
+}
+
+ul.staff-list-long li {
+	clear:left;
+	background-image:none;
+	border-bottom:1px solid #d3e7f4;
+	margin-top:0px;
+	margin-bottom:0px;
+	margin-left:0px;
+	padding-left:0px;
+	padding-top:10px;
+	height:100px;
+}
+
+ul.staff-list-long li img {
+	float:left;
+	border:1px solid #d3e7f4;
+	height:90px;
+	width:120px;
+	margin:0px 10px 10px 10px;
+}
+
+ul.staff-list-long li.odd {
+	background-color: #edf5fa;
+}
+
+div.staff-single {
+	margin-top:20px;
+}
+
+div.staff-single img {
+	border:1px solid #d3e7f4;
+}
+
+div.staff-single tbody,
+div.staff-single thead {
+	border:0px;
+}
+
+div.staff-single td.label {
+	font-weight:bold;
+	width:60px;
+}
+
+div.staff-single p.staff-end {
+	padding-top:10px;
+	clear:left;
+}
+
+div.staff-error {
+	margin-top:20px;
+	border:1px solid #c52020;
+	background-color:#ffcccc;
+	color: #c52020;
+	padding:10px;
+}
