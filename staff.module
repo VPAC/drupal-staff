@@ -1,0 +1,543 @@
+<?php
+
+/**
+ * Written by Brian May 2007: brian@vpac.org
+ * Extended (slightly) by David Colls 2008: davidc@vpac.org
+ */
+
+/**
+* Display help and module information
+* @param section which section of the site we're displaying help
+* @return help text for section
+*/
+function staff_help($section='') {
+
+	$output = '';
+
+	switch ($section) {
+	case "admin/help#staff":
+		$output = '<p>'.	t("Displays lists of staff"). '</p>';
+		break;
+	}
+
+	return $output;
+} // function staff_help
+
+/**
+* Valid permissions for this module
+* @return array An array of valid permissions for the ldap module
+*/
+function staff_perm() {
+	return array('access staff content','administer staff content');
+} // function staff_perm()
+
+function staff_menu() {
+
+	$items = array();
+
+	$items[] = array(
+		'path' => 'admin/settings/staff',
+		'title' => t('Staff settings'),
+		'description' => t('LDAP configuration and security settings for staff.'),
+		'callback' => 'drupal_get_form',
+		'callback arguments' => 'staff_admin',
+		'access' => user_access('administer staff content'),
+		'type' => MENU_NORMAL_ITEM,
+	 );
+
+	$items[] = array(
+		'path' => 'staff',
+		'title' => t('Staff'),
+		'callback' => 'staff_content',
+		'access' => user_access('access staff content'),
+		'type' => MENU_NORMAL_ITEM
+	);
+
+	return $items;
+}
+
+function staff_admin() {
+
+	$form['staff_server'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Server'),
+		'#default_value' => variable_get('staff_server', 'ldap'),
+		'#size' => 50,
+		'#maxlength' => 50,
+		'#description' => t("The LDAP server")
+	);
+
+	$form['staff_basedn_users'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Base DN users'),
+		'#default_value' => variable_get('staff_basedn_users', 'dc=example,dc=org'),
+		'#size' => 50,
+		'#maxlength' => 50,
+		'#description' => t("The base DN for all users")
+	);
+
+	$form['staff_basedn_groups'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Base DN groups'),
+		'#default_value' => variable_get('staff_basedn_groups', 'dc=example,dc=org'),
+		'#size' => 50,
+		'#maxlength' => 50,
+		'#description' => t("The base DN for all groups")
+	);
+
+	$form['valid_groups'] = array(
+		'#type' => 'textarea',
+		'#title' => t('Valid Groups'),
+		'#default_value' => variable_get('valid_groups', ''),
+		'#rows' => 7,
+		'#description' => t("Enter valid group names, one per line. No spaces or other special characters in group names.")
+	);
+
+	return system_settings_form($form);
+}
+
+// List of attributes we should fetch from LDAP
+function staff_keys() {
+	return	array(
+								"cn" => "Name",
+		"title" => "Title",
+								"telephonenumber" => "Phone",
+								"facsimiletelephonenumber" => "Fax",
+		"mail" => "Email",
+								);
+}
+
+
+// Has this account expired? 
+function staff_get_expired($ds,$entry) {
+	$utc_diff = date('Z');
+	$values = @ldap_get_values($ds,$entry,"shadowExpire");
+	if ($values===false or $values["count"] == 0) {
+		return(false);
+	}
+	$expires = $values[0]*24*3600+$utc_diff;
+	
+	if ($expires <= time()) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+// Create a link to the photo to this user
+function staff_do_photo_link($ds,$entry,$uid) {
+	if (!isset($uid)) {
+		return "";
+	}
+	$photo = @ldap_get_values_len($ds,$entry,"jpegPhoto");
+	if ($photo===false or $photo["count"] == 0) {
+		return "";
+	}
+	$path = "staff/uid/".$uid.".jpg";
+	return "<img src='" . url($path). "' alt='Staff Photograph'/>";
+}
+
+// Display attributes of a single staff member not in a list
+function staff_do_user($ds,$entry,$fields,$extra) {
+	$uid=undef;
+	$values = @ldap_get_values($ds,$entry,"uid");
+	if ($values!==false and $values["count"] > 0) {
+		$uid=$values[0];
+	}
+	
+	$content .= staff_do_photo_link($ds,$entry,$uid);
+	
+	$content .= "<table>";
+	$keys = staff_keys();
+	foreach ($keys as $ldap => $label) {
+		$values = @ldap_get_values($ds,$entry,$ldap);
+		if ($values===false or $values["count"] == 0) continue;
+		
+		$content .= "<tr>";
+		$content .= '<td class="label">'.htmlspecialchars($label)."</td><td>";
+		$nl = "";
+		for ($i=0; $i<$values["count"]; $i=$i+1) {
+			if ($ldap =="cn") {
+				if (isset($uid)) {
+					$url = "staff/uid/$uid";
+					$content .= $nl.l($values[$i],$url);
+				} else {
+					$content .= $nl.htmlspecialchars($values[0]);
+				}
+			} elseif ($ldap =="mail") {
+				$url = "mailto:$values[$i]";
+				$content .= $nl.l($values[$i],$url);
+			} else {
+				$content .= $nl.htmlspecialchars($values[$i]);
+			}
+			$nl="<br/>";
+		}
+		$content .= "</td>";
+		$content .= "</tr>";
+	}
+	
+	$content .= "$fields";
+	$content .= "</table>";
+	$content .= "<p class='staff-end'>$extra</p>";
+	return $content;
+}
+
+
+// Display attributes of a single staff member in a compact list format
+// The compact format does not include a photo and shows all details on one line
+function staff_do_list_user_compact($ds,$entry) {
+	$uid=undef;
+	$values = @ldap_get_values($ds,$entry,"uid");
+	if ($values!==false and $values["count"] > 0) {
+		$uid=$values[0];
+	}
+	
+	$keys = array(
+								"cn" => "Name",
+								"title" => "Title",
+								"telephonenumber" => "Phone",
+								"mail" => "Email",
+								);
+	$nl = "";
+	foreach ($keys as $ldap => $label) {
+		$values = @ldap_get_values($ds,$entry,$ldap);
+		if ($values===false or $values["count"] == 0) continue;
+		
+		for ($i=0; $i<$values["count"]; $i=$i+1) {
+			if ($ldap =="cn") {
+				if (isset($uid)) {
+					$url = "staff/uid/$uid";
+					$content .= $nl.l($values[$i],$url);
+				} else {
+					$content .= $nl.htmlspecialchars($values[0]);
+				}
+			} elseif ($ldap =="mail") {
+				$url = "mailto:$values[$i]";
+				$content .= $nl.l($values[$i],$url);
+			} else {
+				$content .= $nl.htmlspecialchars($values[$i]);
+			}
+			$nl=", ";
+		}
+	}
+	
+	return $content;
+}
+
+// Display attributes of a single staff member in an expanded list format
+// The expanded format includes a photo and further details
+function staff_do_list_user_long($ds,$entry) {
+	$uid=undef;
+	$values = @ldap_get_values($ds,$entry,"uid");
+	if ($values!==false and $values["count"] > 0) {
+		$uid=$values[0];
+	}
+	
+	$keys = array(
+								"cn" => "Name",
+								"title" => "Title",
+								"telephonenumber" => "Phone",
+								"mail" => "Email",
+								);
+	$nl = "<br/>";
+	foreach ($keys as $ldap => $label) {
+		$values = @ldap_get_values($ds,$entry,$ldap);
+		if ($values===false or $values["count"] == 0) continue;
+		
+		for ($i=0; $i<$values["count"]; $i=$i+1) {
+			if ($ldap == "cn") {
+				if (isset($uid)) {
+					$url = "staff/uid/$uid";
+					$content .= staff_do_photo_link($ds,$entry,$uid);
+					$content .= l($values[$i],$url);
+				} else {
+					$content .= $nl.htmlspecialchars($values[0]);
+				}
+			} elseif ($ldap == "mail") {
+				$url = "mailto:$values[$i]";
+				$content .= $nl.l($values[$i],$url);
+			} else {
+				$content .= $nl.htmlspecialchars($values[$i]);
+			}
+		}
+	}
+	
+	return $content;
+}
+
+// Display a list of staff
+function staff_do_list($ds,$sr,$type) {
+	$content = "";
+	$content_class = ($type == "list_compact")
+		? "staff-list-compact"
+		: "staff-list-long";
+	$content .= "<ul class='$content_class'>";
+	
+	$entry = ldap_first_entry($ds, $sr);
+	
+	$odd = true;
+	while ($entry!==false) {
+		if (!staff_get_expired($ds,$entry)) {
+			$content .="<li class=" . ($odd ? "odd" : "even") . ">";
+			$content .= ($type == "list_compact")
+				? staff_do_list_user_compact($ds,$entry)
+				: staff_do_list_user_long($ds,$entry);
+			$content .="</li>";
+		}
+		$odd = !$odd;
+		$entry=ldap_next_entry($ds,$entry);
+	}
+	$content .= "</ul>";
+	return $content;
+}
+
+// Display a single staff member
+function staff_do_single($ds,$sr) {
+	$entry = ldap_first_entry($ds, $sr);
+	
+	while ($entry!==false) {
+		if (staff_get_expired($ds,$entry)) {
+			$fields .= "<dt>Status</dt><dd>Expired</dd>";
+		}
+
+		$extra = "";
+		$values = @ldap_get_values($ds,$entry,"description");
+		for ($i=0; $i<$values["count"]; $i=$i+1) {
+			//$extra .= htmlspecialchars($values[$i]);
+			$extra .= $values[$i];
+		}
+		
+		$content .="<div class='staff-single'>";
+		$content .= staff_do_user($ds,$entry,$fields,$extra);
+		$content .="</div>";
+		$entry=ldap_next_entry($ds,$entry);
+	}
+	return $content;
+}
+
+// Display a single photo
+function staff_do_photo($ds,$sr) {
+	$entry = ldap_first_entry($ds, $sr);
+	if ($entry!==false) {
+		$values = @ldap_get_values_len($ds,$entry,"jpegPhoto");
+	} else {
+		drupal_set_message("Unable to retrieve user: ".ldap_error($ds),"error");
+		return "";
+	}
+	
+	if ($values!==false && $values["count"]!=0) {
+		header('Content-type: image/jpeg');
+		print $values[0];
+		exit();
+	} else {
+		drupal_set_message("Unable to retrieve jpegPhoto: ".ldap_error($ds),
+											 "error");
+		return "";
+	}
+}
+
+
+// Get all groups with the name $group.
+// Usually should only return one result.
+function staff_get_groups($ds,$group) {
+	$result = array(
+									descriptions => array(),
+									groups => array(),
+									members => array()
+									);
+
+   // security issue: $group is untrusted
+   // this is checked in staff_content()
+	$search="(&(objectClass=posixGroup)(cn=$group))";
+	$basedn = variable_get('staff_basedn_groups', 'dc=example,dc=org');
+	$sr=@ldap_search($ds, $basedn, $search,
+									 array("description","gidNumber","memberUid"));
+	if ($sr===false) {
+		drupal_set_message("Unable to search the LDAP server $basedn for $search: ".ldap_error($ds),
+											 "error");
+		return;
+	}
+	
+	$entry = ldap_first_entry($ds, $sr);
+	while ($entry!==false) {
+		$values = @ldap_get_values($ds,$entry,"description");
+		for ($i=0; $i<$values["count"]; $i=$i+1) {
+			$id = $values[$i];
+			$result["descriptions"][] = $values[$i];
+		}
+		
+		$values = @ldap_get_values($ds,$entry,"gidNumber");
+		for ($i=0; $i<$values["count"]; $i=$i+1) {
+			$id = $values[$i];
+			$result["groups"][$id] = 1;
+		}
+		$values = @ldap_get_values($ds,$entry,"memberUid");
+		for ($i=0; $i<$values["count"]; $i=$i+1) {
+			$id = $values[$i];
+			$result["members"][$id] = 1;
+		}
+		$entry=ldap_next_entry($ds,$entry);
+	}
+	return ($result);
+}
+
+// staff_get_list
+//
+// retrieve list of type $type when [$key] = $value
+// $key can be "name", "cn", "uid", or "".
+// $type can be "list" or "photo"
+//
+// If $type is "photo" and multiple results present, display error.
+// If $type is "photo" and multiple results present, use list display.
+// If $type is "phtoo" and only one result present, use singular display.
+function staff_get_list($ds,$key,$type,$value) {
+	$photo = false;
+	$term = undef;
+
+	if ($type == "photo") {
+		$photo = true;
+	}
+	
+	$search = "(&(objectClass=inetOrgPerson)(!(uid=administrator))(!(uid=root))";
+	if ($key == "name") {
+		$name = str_replace("_"," ",$value);
+		$search.="(cn=$name)";
+	} elseif ($key == "uid") {
+		$search.="(uid=$value)";
+	} elseif ($key == "group") {
+      $group = $value;
+		$groups = staff_get_groups($ds,$group);
+		
+		$search.="(|";
+		foreach ($groups["groups"] as $id => $dummy) {
+			$search .="(gidNumber=$id)";
+		}
+		foreach ($groups["members"] as $id => $dummy) {
+			$search .="(uid=$id)";
+		}
+		$search .= ")";
+
+		$content .= '<div class="staff-list">';
+
+		// Note: if multiple matches found, this will only display
+		// first description of first group.
+		$content .= "<h3>Staff list for ".htmlspecialchars($groups['descriptions'][0])."</h3>";
+	} else {
+		$search .="";
+		$content .= "<h3>Staff list for VPAC Staff</h3>";
+	}
+	$search .= ")";
+	
+	$attributes=array("jpegPhoto","shadowExpire","uid","description");
+	$keys = staff_keys();
+	foreach ($keys as $key => $value) { $attributes[] = $key; }
+	
+	$basedn = variable_get('staff_basedn_users', 'dc=example,dc=org');
+	$sr=@ldap_search($ds, $basedn, $search,$attributes);
+
+	if ($sr) {
+		ldap_sort($ds,$sr,"cn");
+		
+		$count = ldap_count_entries($ds, $sr);
+		
+		if ($photo and $count == 0) {
+			$content .= "<p>Photo not found</p>";
+		} elseif ($photo and $count == 1) {
+			$content .= staff_do_photo($ds,$sr); 
+		} elseif ($photo) {
+			$content .= "<p>Too many entries found ($count)</p>";
+		} elseif ($count == 0) {
+			$content .= "<p>No results found</p>";
+		} elseif ($count == 1) {
+			$content .= staff_do_single($ds,$sr);
+		} else {
+			$content .= "<p>Staff are listed alphabetically by first name.</p>";
+			$content .= staff_do_list($ds,$sr,$type);
+		}
+	} else {
+		drupal_set_message("Unable to search the LDAP server '$search': ".ldap_error($ds),"error");
+	}
+
+	// class="staff-list"
+	if ($key == "group") {
+		$content .=	'</div>';
+	}
+	
+	return $content;
+}
+
+// Test whether we can display the specified group
+function is_valid_group($group_name) {
+	$valid_groups = variable_get('valid_groups', '');
+	$valid_array = split("[\n\r ]", $valid_groups);
+	
+	$valid = false;
+	for ($i = 0; !$valid && $i < count($valid_array); $i++) {
+		$valid = $group_name === $valid_array[$i];
+	}
+
+	return $valid;
+}
+
+// staff_content
+// Called by Drupal when user retrieves URL under /staff.
+function staff_content() {
+	$ds = false;
+	$r = false;
+	$sr = false;
+
+	$content = "";
+	$server=variable_get('staff_server', 'ldap');
+	$ds=ldap_connect($server);	// must be a valid LDAP server!
+
+	if ($ds) {
+		ldap_set_option($ds, LDAP_OPT_PROTOCOL_VERSION, 3);
+		$r=@ldap_bind($ds);		// this is an "anonymous" bind, typically
+													 // read-only access
+	} else {
+		drupal_set_message("Unable to connect to LDAP server $server","error");
+	}
+
+	$breadcrumb = array();
+	$breadcrumb[] = array('path' => 'about', 'title' => t('About Us'));
+	
+	if ($r) {
+		$type = undef;
+		$term = undef;
+		if (preg_match('/^([0-9a-zA-Z_ ]+)\.jpg$/',arg(2),$matches)) {
+			$term = $matches[1];
+			$type = "photo";
+		} elseif (preg_match('/^[0-9a-zA-Z_ ]+$/',arg(2))) {
+			$term = arg(2);
+			$type = "list_long";
+		}
+
+		if (arg(1) == "name") {
+			$content = staff_get_list($ds,"name",$type,$term);
+			$breadcrumb[] = array('path' => '', 'title' => t('Staff Member'));
+		} elseif (arg(1) == "uid") {
+			$content = staff_get_list($ds,"uid",$type,$term);
+			$breadcrumb[] = array('path' => '', 'title' => t('Staff Member'));
+		} elseif (arg(1) == "group" && is_valid_group(arg(2))) {
+			$content = staff_get_list($ds,"group",$type,$term);
+			$breadcrumb[] = array('path' => '', 'title' => t('Staff List'));
+		} elseif (arg(1) == "all") {
+			$content .= staff_get_list($ds,"group","list_compact","vpac");
+			$breadcrumb[] = array('path' => '', 'title' => t('All Staff'));
+		}
+		else {
+			$content .= '<div class="staff-error">';
+			$content .= "The staff search you requested is invalid. ";
+         $content .= 'Please return to the <a href="/staff">staff page</a> to try another search.';
+			$content .= '</div>';
+		}
+	}
+
+	ldap_close($ds);
+	
+	menu_set_location($breadcrumb);
+
+	print theme("page", $content);
+}
+
+# vim:syntax=php:ts=3

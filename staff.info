@@ -1,0 +1,2 @@
+name = staff
+description = "Create Staff lists from LDAP database"
