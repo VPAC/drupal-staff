@@ -96,18 +96,6 @@ function staff_admin() {
 	return system_settings_form($form);
 }
 
-// List of attributes we should fetch from LDAP
-function staff_keys() {
-	return	array(
-								"cn" => "Name",
-		"title" => "Title",
-								"telephonenumber" => "Phone",
-								"facsimiletelephonenumber" => "Fax",
-		"mail" => "Email",
-								);
-}
-
-
 // Has this account expired? 
 function staff_get_expired($ds,$entry) {
 	$utc_diff = date('Z');
@@ -147,8 +135,12 @@ function staff_do_user($ds,$entry,$fields,$extra) {
 	
 	$content .= staff_do_photo_link($ds,$entry,$uid);
 	
+	$keys=array(
+					 "cn" => "Name",
+					 "title" => "Title",
+					 "facsimiletelephonenumber" => "Fax",
+					 );
 	$content .= "<table>";
-	$keys = staff_keys();
 	foreach ($keys as $ldap => $label) {
 		$values = @ldap_get_values($ds,$entry,$ldap);
 		if ($values===false or $values["count"] == 0) continue;
@@ -428,9 +420,8 @@ function staff_get_list($ds,$key,$type,$value) {
 	}
 	$search .= ")";
 	
-	$attributes=array("jpegPhoto","shadowExpire","uid","description");
-	$keys = staff_keys();
-	foreach ($keys as $key => $value) { $attributes[] = $key; }
+	$attributes=array("jpegPhoto","shadowExpire","uid","description",
+							"cn", "title", "telephonenumber", "mobile", "facsimiletelephonenumber", "mail");
 	
 	$basedn = variable_get('staff_basedn_users', 'dc=example,dc=org');
 	$sr=@ldap_search($ds, $basedn, $search,$attributes);
