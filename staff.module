@@ -438,6 +438,7 @@ function staff_get_list($ds,$key,$type,$value) {
 			public_mobile => staff_get_groups($ds,"public_mobile")
 	);
 
+	$request = undef;
 	$search = "(&(objectClass=inetOrgPerson)(!(uid=administrator))(!(uid=root))";
 	if ($key == "name") {
 		$request = "single";
