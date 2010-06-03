@@ -392,11 +392,14 @@ function staff_get_list($ds,$key,$type,$value) {
 	
 	$search = "(&(objectClass=inetOrgPerson)(!(uid=administrator))(!(uid=root))";
 	if ($key == "name") {
+		$request = "single";
 		$name = str_replace("_"," ",$value);
 		$search.="(cn=$name)";
 	} elseif ($key == "uid") {
+		$request = "single";
 		$search.="(uid=$value)";
 	} elseif ($key == "group") {
+		$request = "list";
       $group = $value;
 		$groups = staff_get_groups($ds,$group);
 		
@@ -415,6 +418,7 @@ function staff_get_list($ds,$key,$type,$value) {
 		// first description of first group.
 		$content .= "<h3>Staff list for ".htmlspecialchars($groups['descriptions'][0])."</h3>";
 	} else {
+		$request = "list";
 		$search .="";
 		$content .= "<h3>Staff list for VPAC Staff</h3>";
 	}
@@ -439,7 +443,7 @@ function staff_get_list($ds,$key,$type,$value) {
 			$content .= "<p>Too many entries found ($count)</p>";
 		} elseif ($count == 0) {
 			$content .= "<p>No results found</p>";
-		} elseif ($count == 1) {
+		} elseif ($request=="single" && $count == 1) {
 			$content .= staff_do_single($ds,$sr);
 		} else {
 			$content .= "<p>Staff are listed alphabetically by first name.</p>";
