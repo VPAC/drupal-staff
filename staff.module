@@ -3,6 +3,7 @@
 /**
  * Written by Brian May 2007: brian@vpac.org
  * Extended (slightly) by David Colls 2008: davidc@vpac.org
+ * Trivial ordering modifications by Lev Lafayette 2010: lev@vpac.org
  */
 
 /**
@@ -141,7 +142,6 @@ function staff_do_user($ds,$entry,$fields,$extra,$privacy) {
 	$keys=array(
 					 "cn" => "Name",
 					 "title" => "Title",
-					 "facsimiletelephonenumber" => "Fax",
 					 );
 
 	if ($privacy["public_telephonenumber"]["members"][$uid]) {
@@ -150,6 +150,8 @@ function staff_do_user($ds,$entry,$fields,$extra,$privacy) {
 	if ($privacy["public_mobile"]["members"][$uid]) {
 		$keys["mobile"] = "Mobile Phone";
 	}
+   $keys["facsimiletelephonenumber"] = "Fax";
+
 	if ($privacy["public_email"]["members"][$uid]) {
 		$keys["mail"] = "Email";
 	}
