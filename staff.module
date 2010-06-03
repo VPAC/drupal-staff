@@ -113,8 +113,11 @@ function staff_get_expired($ds,$entry) {
 }
 
 // Create a link to the photo to this user
-function staff_do_photo_link($ds,$entry,$uid) {
+function staff_do_photo_link($ds,$entry,$uid,$privacy) {
 	if (!isset($uid)) {
+		return "";
+	}
+	if (!$privacy["public_photo"]["members"][$uid]) {
 		return "";
 	}
 	$photo = @ldap_get_values_len($ds,$entry,"jpegPhoto");
@@ -126,20 +129,31 @@ function staff_do_photo_link($ds,$entry,$uid) {
 }
 
 // Display attributes of a single staff member not in a list
-function staff_do_user($ds,$entry,$fields,$extra) {
+function staff_do_user($ds,$entry,$fields,$extra,$privacy) {
 	$uid=undef;
 	$values = @ldap_get_values($ds,$entry,"uid");
 	if ($values!==false and $values["count"] > 0) {
 		$uid=$values[0];
 	}
 	
-	$content .= staff_do_photo_link($ds,$entry,$uid);
+	$content .= staff_do_photo_link($ds,$entry,$uid,$privacy);
 	
 	$keys=array(
 					 "cn" => "Name",
 					 "title" => "Title",
 					 "facsimiletelephonenumber" => "Fax",
 					 );
+
+	if ($privacy["public_telephonenumber"]["members"][$uid]) {
+		$keys["telephonenumber"] = "Phone";
+	}
+	if ($privacy["public_mobile"]["members"][$uid]) {
+		$keys["mobile"] = "Mobile Phone";
+	}
+	if ($privacy["public_email"]["members"][$uid]) {
+		$keys["mail"] = "Email";
+	}
+
 	$content .= "<table>";
 	foreach ($keys as $ldap => $label) {
 		$values = @ldap_get_values($ds,$entry,$ldap);
@@ -177,7 +191,7 @@ function staff_do_user($ds,$entry,$fields,$extra) {
 
 // Display attributes of a single staff member in a compact list format
 // The compact format does not include a photo and shows all details on one line
-function staff_do_list_user_compact($ds,$entry) {
+function staff_do_list_user_compact($ds,$entry,$privacy) {
 	$uid=undef;
 	$values = @ldap_get_values($ds,$entry,"uid");
 	if ($values!==false and $values["count"] > 0) {
@@ -187,9 +201,17 @@ function staff_do_list_user_compact($ds,$entry) {
 	$keys = array(
 					 "cn" => "Name",
 					 "title" => "Title",
-					 "telephonenumber" => "Phone",
-					 "mail" => "Email",
 					 );
+	if ($privacy["public_telephonenumber"]["members"][$uid]) {
+		$keys["telephonenumber"] = "Phone";
+	}
+	if ($privacy["public_mobile"]["members"][$uid]) {
+		$keys["mobile"] = "Mobile Phone";
+	}
+	if ($privacy["public_email"]["members"][$uid]) {
+		$keys["mail"] = "Email";
+	}
+
 	$nl = "";
 	foreach ($keys as $ldap => $label) {
 		$values = @ldap_get_values($ds,$entry,$ldap);
@@ -218,7 +240,7 @@ function staff_do_list_user_compact($ds,$entry) {
 
 // Display attributes of a single staff member in an expanded list format
 // The expanded format includes a photo and further details
-function staff_do_list_user_long($ds,$entry) {
+function staff_do_list_user_long($ds,$entry,$privacy) {
 	$uid=undef;
 	$values = @ldap_get_values($ds,$entry,"uid");
 	if ($values!==false and $values["count"] > 0) {
@@ -228,9 +250,17 @@ function staff_do_list_user_long($ds,$entry) {
 	$keys = array(
 					 "cn" => "Name",
 					 "title" => "Title",
-					 "telephonenumber" => "Phone",
-					 "mail" => "Email",
 					 );
+	if ($privacy["public_telephonenumber"]["members"][$uid]) {
+		$keys["telephonenumber"] = "Phone";
+	}
+	if ($privacy["public_mobile"]["members"][$uid]) {
+		$keys["mobile"] = "Mobile Phone";
+	}
+	if ($privacy["public_email"]["members"][$uid]) {
+		$keys["mail"] = "Email";
+	}
+
 	$nl = "<br/>";
 	foreach ($keys as $ldap => $label) {
 		$values = @ldap_get_values($ds,$entry,$ldap);
@@ -240,7 +270,7 @@ function staff_do_list_user_long($ds,$entry) {
 			if ($ldap == "cn") {
 				if (isset($uid)) {
 					$url = "staff/uid/$uid";
-					$content .= staff_do_photo_link($ds,$entry,$uid);
+					$content .= staff_do_photo_link($ds,$entry,$uid,$privacy);
 					$content .= l($values[$i],$url);
 				} else {
 					$content .= $nl.htmlspecialchars($values[0]);
@@ -258,7 +288,7 @@ function staff_do_list_user_long($ds,$entry) {
 }
 
 // Display a list of staff
-function staff_do_list($ds,$sr,$type) {
+function staff_do_list($ds,$sr,$type,$privacy) {
 	$content = "";
 	$content_class = ($type == "list_compact")
 		? "staff-list-compact"
@@ -272,8 +302,8 @@ function staff_do_list($ds,$sr,$type) {
 		if (!staff_get_expired($ds,$entry)) {
 			$content .="<li class=" . ($odd ? "odd" : "even") . ">";
 			$content .= ($type == "list_compact")
-				? staff_do_list_user_compact($ds,$entry)
-				: staff_do_list_user_long($ds,$entry);
+				? staff_do_list_user_compact($ds,$entry,$privacy)
+				: staff_do_list_user_long($ds,$entry,$privacy);
 			$content .="</li>";
 		}
 		$odd = !$odd;
@@ -284,7 +314,7 @@ function staff_do_list($ds,$sr,$type) {
 }
 
 // Display a single staff member
-function staff_do_single($ds,$sr) {
+function staff_do_single($ds,$sr,$privacy) {
 	$entry = ldap_first_entry($ds, $sr);
 	
 	while ($entry!==false) {
@@ -300,7 +330,7 @@ function staff_do_single($ds,$sr) {
 		}
 		
 		$content .="<div class='staff-single'>";
-		$content .= staff_do_user($ds,$entry,$fields,$extra);
+		$content .= staff_do_user($ds,$entry,$fields,$extra,$privacy);
 		$content .="</div>";
 		$entry=ldap_next_entry($ds,$entry);
 	}
@@ -308,8 +338,19 @@ function staff_do_single($ds,$sr) {
 }
 
 // Display a single photo
-function staff_do_photo($ds,$sr) {
+function staff_do_photo($ds,$sr,$privacy) {
 	$entry = ldap_first_entry($ds, $sr);
+
+	$uid=undef;
+	$values = @ldap_get_values($ds,$entry,"uid");
+	if ($values!==false and $values["count"] > 0) {
+		$uid=$values[0];
+	}
+	if (!$privacy["public_photo"]["members"][$uid]) {
+		drupal_set_message("Unable to retrieve user (privacy): ".ldap_error($ds),"error");
+		return "";
+	}
+
 	if ($entry!==false) {
 		$values = @ldap_get_values_len($ds,$entry,"jpegPhoto");
 	} else {
@@ -390,6 +431,13 @@ function staff_get_list($ds,$key,$type,$value) {
 		$photo = true;
 	}
 	
+	$privacy = array(
+			public_photo => staff_get_groups($ds,"public_photo"),
+			public_email => staff_get_groups($ds,"public_email"),
+			public_telephonenumber => staff_get_groups($ds,"public_telephonenumber"),
+			public_mobile => staff_get_groups($ds,"public_mobile")
+	);
+
 	$search = "(&(objectClass=inetOrgPerson)(!(uid=administrator))(!(uid=root))";
 	if ($key == "name") {
 		$request = "single";
@@ -438,16 +486,16 @@ function staff_get_list($ds,$key,$type,$value) {
 		if ($photo and $count == 0) {
 			$content .= "<p>Photo not found</p>";
 		} elseif ($photo and $count == 1) {
-			$content .= staff_do_photo($ds,$sr); 
+			$content .= staff_do_photo($ds,$sr,$privacy); 
 		} elseif ($photo) {
 			$content .= "<p>Too many entries found ($count)</p>";
 		} elseif ($count == 0) {
 			$content .= "<p>No results found</p>";
 		} elseif ($request=="single" && $count == 1) {
-			$content .= staff_do_single($ds,$sr);
+			$content .= staff_do_single($ds,$sr,$privacy);
 		} else {
 			$content .= "<p>Staff are listed alphabetically by first name.</p>";
-			$content .= staff_do_list($ds,$sr,$type);
+			$content .= staff_do_list($ds,$sr,$type,$privacy);
 		}
 	} else {
 		drupal_set_message("Unable to search the LDAP server '$search': ".ldap_error($ds),"error");
