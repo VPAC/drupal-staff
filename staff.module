@@ -185,11 +185,11 @@ function staff_do_list_user_compact($ds,$entry) {
 	}
 	
 	$keys = array(
-								"cn" => "Name",
-								"title" => "Title",
-								"telephonenumber" => "Phone",
-								"mail" => "Email",
-								);
+					 "cn" => "Name",
+					 "title" => "Title",
+					 "telephonenumber" => "Phone",
+					 "mail" => "Email",
+					 );
 	$nl = "";
 	foreach ($keys as $ldap => $label) {
 		$values = @ldap_get_values($ds,$entry,$ldap);
@@ -226,11 +226,11 @@ function staff_do_list_user_long($ds,$entry) {
 	}
 	
 	$keys = array(
-								"cn" => "Name",
-								"title" => "Title",
-								"telephonenumber" => "Phone",
-								"mail" => "Email",
-								);
+					 "cn" => "Name",
+					 "title" => "Title",
+					 "telephonenumber" => "Phone",
+					 "mail" => "Email",
+					 );
 	$nl = "<br/>";
 	foreach ($keys as $ldap => $label) {
 		$values = @ldap_get_values($ds,$entry,$ldap);
