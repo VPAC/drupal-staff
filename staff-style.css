@@ -41,7 +41,7 @@ ul.staff-list-long li {
 	margin-top:0px;
 	margin-bottom:0px;
 	margin-left:0px;
-	padding-left:0px;
+	padding-left:10px;
 	padding-top:10px;
 	height:100px;
 }
@@ -51,7 +51,7 @@ ul.staff-list-long li img {
 	border:1px solid #d3e7f4;
 	height:90px;
 	width:120px;
-	margin:0px 10px 10px 10px;
+	margin:0px 0px 10px 10px;
 }
 
 ul.staff-list-long li.odd {
