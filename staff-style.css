@@ -47,7 +47,7 @@ ul.staff-list-long li {
 }
 
 ul.staff-list-long li img {
-	float:left;
+	float:right;
 	border:1px solid #d3e7f4;
 	height:90px;
 	width:120px;
