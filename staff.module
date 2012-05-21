@@ -4,6 +4,7 @@
  * Written by Brian May 2007: brian@vpac.org
  * Extended (slightly) by David Colls 2008: davidc@vpac.org
  * Trivial ordering modifications by Lev Lafayette 2010: lev@vpac.org
+ * Changed breadcrumb path April 1, 2011 Lev Lafayette: lev@vpac.org
  */
 
 function staff_init() {
@@ -549,7 +550,7 @@ function staff_content() {
 	}
 
 	$breadcrumb = array();
-	$breadcrumb[] = array('path' => 'about', 'title' => t('About Us'));
+	$breadcrumb[] = array('path' => 'about/VPAC', 'title' => t('About Us'));
 	
 	if ($r) {
 		$type = undef;
