@@ -567,7 +567,12 @@ function staff_content() {
 			$content = staff_get_list($ds,"name",$type,$term);
 			$breadcrumb[] = array('path' => '', 'title' => t('Staff Member'));
 		} elseif (arg(1) == "uid") {
-			$content = staff_get_list($ds,"uid",$type,$term);
+			$groups = staff_get_groups($ds,"vpac");
+			if (isset($groups["members"][$term])) {
+				$content = staff_get_list($ds,"uid",$type,$term);
+			} else {
+				$content = "<p>No results found</p>";
+			}
 			$breadcrumb[] = array('path' => '', 'title' => t('Staff Member'));
 		} elseif (arg(1) == "group" && is_valid_group(arg(2))) {
 			$content = staff_get_list($ds,"group",$type,$term);
