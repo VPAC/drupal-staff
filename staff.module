@@ -226,7 +226,7 @@ function staff_do_user($ds, $entry, $uid, $expired, $privacy) {
   $content .= "</table>";
 
   if ($description) {
-    $content .= "<p class='staff-end'>$description</p>";
+    $content .= "<p class='staff-end'>" . htmlspecialchars($description) . "</p>";
   }
 
   return $content;
