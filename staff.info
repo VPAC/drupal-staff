@@ -1,2 +1,4 @@
 name = staff
 description = "Create Staff lists from LDAP database"
+core = 7.x
+configure = admin/config/staff
