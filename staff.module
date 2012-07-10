@@ -376,6 +376,8 @@ function staff_do_single($ds, $sr, $privacy) {
   $content = "";
 
   while ($entry !== FALSE) {
+    $fields = "";
+
     if (staff_get_expired($ds, $entry)) {
       $fields .= "<dt>Status</dt><dd>Expired</dd>";
     }
