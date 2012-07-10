@@ -20,30 +20,33 @@ function staff_init() {
  *
  * Displays help and module information.
  *
- * @param section which section of the site we're displaying help
- * @return help text for section
+ * @param path 
+ *   Which path of the site we're using to display help
+ * @param arg 
+ *   Array that holds the current path as returned from arg() function
  */
-function staff_help($section='') {
-
-  $output = '';
-
-  switch ($section) {
-  case "admin/help#staff":
-    $output = '<p>'.  t("Displays lists of staff"). '</p>';
-    break;
+function staff_help($path, $arg) {
+  switch ($path) {
+    case "admin/help#staff":
+      return '<p>' . t("Displays lists of staff") . '</p>';
+      break;
   }
-
-  return $output;
 } // function staff_help
 
 /**
  * Valid permissions for this module
  * @return array An array of valid permissions for the ldap module
  */
-function staff_perm() {
+function staff_permission() {
   return array(
-    'access staff content',
-    'administer staff content'
+    'access staff content' => array(
+      'title' => t('access staff content'),
+      'description' => t('Perform administration tasks for the staff module.'),
+    ),
+    'administer staff content' => array(
+      'title' => t('administer staff content'),
+      'description' => t('Access user content for the staff module.'),
+    ),
   );
 } // function staff_perm()
 
@@ -54,21 +57,19 @@ function staff_menu() {
 
   $items = array();
 
-  $items[] = array(
-    'path' => 'admin/settings/staff',
-    'title' => t('Staff settings'),
-    'description' => t('LDAP configuration and security settings for staff.'),
-    'callback' => 'drupal_get_form',
-    'callback arguments' => 'staff_admin',
-    'access' => user_access('administer staff content'),
+  $items['admin/config/staff'] = array(
+    'title' => 'Staff settings',
+    'description' => 'LDAP configuration and security settings for staff.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('staff_admin'),
+    'access arguments' => array('administer staff content'),
     'type' => MENU_NORMAL_ITEM,
   );
 
-  $items[] = array(
-    'path' => 'staff',
-    'title' => t('Staff'),
-    'callback' => 'staff_content',
-    'access' => user_access('access staff content'),
+  $items['staff'] = array(
+    'title' => 'Staff',
+    'page callback' => 'staff_content',
+    'access arguments' => array('access staff content'),
     'type' => MENU_NORMAL_ITEM,
   );
 
@@ -128,7 +129,7 @@ function staff_get_expired($ds, $entry) {
   }
   $expires = $values[0] * 24 * 3600 + $utc_diff;
 
-  if ($expires <= time()) {
+  if ($expires <= REQUEST_TIME) {
     return TRUE;
   }
   else {
@@ -409,7 +410,7 @@ function staff_do_photo($ds, $sr, $privacy) {
     $uid = $values[0];
   }
   if (!$privacy["public_photo"]["members"][$uid]) {
-    drupal_set_message("Unable to retrieve user (privacy): " . ldap_error($ds), "error");
+    drupal_set_message(check_plain("Unable to retrieve user (privacy): " . ldap_error($ds)), "error");
     return "";
   }
 
@@ -417,7 +418,7 @@ function staff_do_photo($ds, $sr, $privacy) {
     $values = @ldap_get_values_len($ds, $entry, "jpegPhoto");
   }
   else {
-    drupal_set_message("Unable to retrieve user: " . ldap_error($ds), "error");
+    drupal_set_message(check_plain("Unable to retrieve user: " . ldap_error($ds)), "error");
     return "";
   }
 
@@ -427,7 +428,7 @@ function staff_do_photo($ds, $sr, $privacy) {
     exit();
   }
   else {
-    drupal_set_message("Unable to retrieve jpegPhoto: ".ldap_error($ds), "error");
+    drupal_set_message(check_plain("Unable to retrieve jpegPhoto: " . ldap_error($ds)), "error");
     return "";
   }
 }
@@ -450,7 +451,7 @@ function staff_get_groups($ds, $group) {
   $basedn = variable_get('staff_basedn_groups', 'dc=example,dc=org');
   $sr = @ldap_search($ds, $basedn, $search, array("description", "gidNumber", "memberUid"));
   if ($sr === FALSE) {
-    drupal_set_message("Unable to search the LDAP server $basedn for $search: ".ldap_error($ds),
+    drupal_set_message(check_plain("Unable to search the LDAP server $basedn for $search: " . ldap_error($ds)),
                        "error");
     return;
   }
@@ -583,7 +584,7 @@ function staff_get_list($ds, $key, $type, $value) {
     }
   }
   else {
-    drupal_set_message("Unable to search the LDAP server '$search': " .ldap_error($ds), "error");
+    drupal_set_message(check_plain("Unable to search the LDAP server '$search': " . ldap_error($ds)), "error");
   }
 
   // class="staff-list"
@@ -627,7 +628,7 @@ function staff_content() {
     // read-only access
   }
   else {
-    drupal_set_message("Unable to connect to LDAP server $server", "error");
+    drupal_set_message(check_plain("Unable to connect to LDAP server $server"), "error");
   }
 
   $breadcrumb = array();
@@ -692,9 +693,9 @@ function staff_content() {
 
   ldap_close($ds);
 
-  menu_set_location($breadcrumb);
+  drupal_set_breadcrumb($breadcrumb);
 
-  print theme("page", $content);
+  return $content;
 }
 
 # vim:syntax=php:ts=3
