@@ -250,7 +250,7 @@ function staff_do_list_user_compact($ds, $entry, $privacy) {
 
   $nl = "";
   foreach ($keys as $ldap => $label) {
-    $values = @ldap_get_values($ds,$entry,$ldap);
+    $values = @ldap_get_values($ds, $entry, $ldap);
     if ($values === false or $values["count"] == 0) {
       continue;
     }
@@ -488,10 +488,10 @@ function staff_get_list($ds, $key, $type, $value) {
   }
 
   $privacy = array(
-    public_photo => staff_get_groups($ds,"public_photo"),
-    public_email => staff_get_groups($ds,"public_email"),
-    public_telephonenumber => staff_get_groups($ds,"public_telephonenumber"),
-    public_mobile => staff_get_groups($ds,"public_mobile"),
+    public_photo => staff_get_groups($ds, "public_photo"),
+    public_email => staff_get_groups($ds, "public_email"),
+    public_telephonenumber => staff_get_groups($ds, "public_telephonenumber"),
+    public_mobile => staff_get_groups($ds, "public_mobile"),
   );
 
   $request = undef;
@@ -574,7 +574,7 @@ function staff_get_list($ds, $key, $type, $value) {
     }
   }
   else {
-    drupal_set_message("Unable to search the LDAP server '$search': " .ldap_error($ds),"error");
+    drupal_set_message("Unable to search the LDAP server '$search': " .ldap_error($ds), "error");
   }
 
   // class="staff-list"
@@ -618,7 +618,7 @@ function staff_content() {
     // read-only access
   }
   else {
-    drupal_set_message("Unable to connect to LDAP server $server","error");
+    drupal_set_message("Unable to connect to LDAP server $server", "error");
   }
 
   $breadcrumb = array();
