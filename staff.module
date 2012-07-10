@@ -123,16 +123,16 @@ function staff_admin() {
 function staff_get_expired($ds, $entry) {
   $utc_diff = date('Z');
   $values = @ldap_get_values($ds, $entry, "shadowExpire");
-  if ($values === false or $values["count"] == 0) {
-    return false;
+  if ($values === FALSE or $values["count"] == 0) {
+    return FALSE;
   }
   $expires = $values[0] * 24 * 3600 + $utc_diff;
 
   if ($expires <= time()) {
-    return true;
+    return TRUE;
   }
   else {
-    return false;
+    return FALSE;
   }
 }
 
@@ -143,11 +143,11 @@ function staff_do_photo_link($ds, $entry, $uid, $privacy) {
   if (!isset($uid)) {
     return "";
   }
-  if (!$privacy["public_photo"]["members"][$uid]) {
+  if (!isset($privacy["public_photo"]["members"][$uid])) {
     return "";
   }
   $photo = @ldap_get_values_len($ds, $entry, "jpegPhoto");
-  if ($photo === false or $photo["count"] == 0) {
+  if ($photo === FALSE or $photo["count"] == 0) {
     return "";
   }
   $path = "staff/uid/" . $uid . ".jpg";
@@ -158,12 +158,13 @@ function staff_do_photo_link($ds, $entry, $uid, $privacy) {
  * Display attributes of a single staff member not in a list
  */
 function staff_do_user($ds, $entry, $fields, $extra, $privacy) {
-  $uid = undef;
+  $uid = NULL;
   $values = @ldap_get_values($ds, $entry, "uid");
-  if ($values !== false and $values["count"] > 0) {
+  if ($values !== FALSE and $values["count"] > 0) {
     $uid = $values[0];
   }
 
+  $content = "";
   $content .= staff_do_photo_link($ds, $entry, $uid, $privacy);
 
   $keys = array(
@@ -171,22 +172,22 @@ function staff_do_user($ds, $entry, $fields, $extra, $privacy) {
     "title" => "Title",
   );
 
-  if ($privacy["public_telephonenumber"]["members"][$uid]) {
+  if (isset($privacy["public_telephonenumber"]["members"][$uid])) {
     $keys["telephonenumber"] = "Phone";
   }
-  if ($privacy["public_mobile"]["members"][$uid]) {
+  if (isset($privacy["public_mobile"]["members"][$uid])) {
     $keys["mobile"] = "Mobile Phone";
   }
   $keys["facsimiletelephonenumber"] = "Fax";
 
-  if ($privacy["public_email"]["members"][$uid]) {
+  if (isset($privacy["public_email"]["members"][$uid])) {
     $keys["mail"] = "Email";
   }
 
   $content .= "<table>";
   foreach ($keys as $ldap => $label) {
     $values = @ldap_get_values($ds, $entry, $ldap);
-    if ($values === false or $values["count"] == 0) {
+    if ($values === FALSE or $values["count"] == 0) {
       continue;
     }
 
@@ -228,9 +229,9 @@ function staff_do_user($ds, $entry, $fields, $extra, $privacy) {
  * The compact format does not include a photo and shows all details on one line
  */
 function staff_do_list_user_compact($ds, $entry, $privacy) {
-  $uid = undef;
+  $uid = NULL;
   $values = @ldap_get_values($ds, $entry, "uid");
-  if ($values !== false and $values["count"] > 0) {
+  if ($values !== FALSE and $values["count"] > 0) {
     $uid = $values[0];
   }
 
@@ -238,20 +239,22 @@ function staff_do_list_user_compact($ds, $entry, $privacy) {
     "cn" => "Name",
     "title" => "Title",
   );
-  if ($privacy["public_telephonenumber"]["members"][$uid]) {
+  if (isset($privacy["public_telephonenumber"]["members"][$uid])) {
     $keys["telephonenumber"] = "Phone";
   }
-  if ($privacy["public_mobile"]["members"][$uid]) {
+  if (isset($privacy["public_mobile"]["members"][$uid])) {
     $keys["mobile"] = "Mobile Phone";
   }
-  if ($privacy["public_email"]["members"][$uid]) {
+  if (isset($privacy["public_email"]["members"][$uid])) {
     $keys["mail"] = "Email";
   }
+
+  $content = "";
 
   $nl = "";
   foreach ($keys as $ldap => $label) {
     $values = @ldap_get_values($ds, $entry, $ldap);
-    if ($values === false or $values["count"] == 0) {
+    if ($values === FALSE or $values["count"] == 0) {
       continue;
     }
 
@@ -284,9 +287,9 @@ function staff_do_list_user_compact($ds, $entry, $privacy) {
  * The expanded format includes a photo and further details
  */
 function staff_do_list_user_long($ds, $entry, $privacy) {
-  $uid = undef;
+  $uid = NULL;
   $values = @ldap_get_values($ds, $entry, "uid");
-  if ($values !== false and $values["count"] > 0) {
+  if ($values !== FALSE and $values["count"] > 0) {
     $uid = $values[0];
   }
 
@@ -294,20 +297,22 @@ function staff_do_list_user_long($ds, $entry, $privacy) {
     "cn" => "Name",
     "title" => "Title",
   );
-  if ($privacy["public_telephonenumber"]["members"][$uid]) {
+  if (isset($privacy["public_telephonenumber"]["members"][$uid])) {
     $keys["telephonenumber"] = "Phone";
   }
-  if ($privacy["public_mobile"]["members"][$uid]) {
+  if (isset($privacy["public_mobile"]["members"][$uid])) {
     $keys["mobile"] = "Mobile Phone";
   }
-  if ($privacy["public_email"]["members"][$uid]) {
+  if (isset($privacy["public_email"]["members"][$uid])) {
     $keys["mail"] = "Email";
   }
+
+  $content = "";
 
   $nl = "<br/>";
   foreach ($keys as $ldap => $label) {
     $values = @ldap_get_values($ds, $entry, $ldap);
-    if ($values === false or $values["count"] == 0) {
+    if ($values === FALSE or $values["count"] == 0) {
       continue;
     }
 
@@ -347,8 +352,8 @@ function staff_do_list($ds, $sr, $type, $privacy) {
 
   $entry = ldap_first_entry($ds, $sr);
 
-  $odd = true;
-  while ($entry !== false) {
+  $odd = TRUE;
+  while ($entry !== FALSE) {
     if (!staff_get_expired($ds, $entry)) {
       $content .= "<li class=" . ($odd ? "odd" : "even") . ">";
       $content .= ($type == "list_compact")
@@ -368,8 +373,9 @@ function staff_do_list($ds, $sr, $type, $privacy) {
  */
 function staff_do_single($ds, $sr, $privacy) {
   $entry = ldap_first_entry($ds, $sr);
+  $content = "";
 
-  while ($entry !== false) {
+  while ($entry !== FALSE) {
     if (staff_get_expired($ds, $entry)) {
       $fields .= "<dt>Status</dt><dd>Expired</dd>";
     }
@@ -395,9 +401,9 @@ function staff_do_single($ds, $sr, $privacy) {
 function staff_do_photo($ds, $sr, $privacy) {
   $entry = ldap_first_entry($ds, $sr);
 
-  $uid = undef;
+  $uid = NULL;
   $values = @ldap_get_values($ds, $entry, "uid");
-  if ($values !== false and $values["count"] > 0) {
+  if ($values !== FALSE and $values["count"] > 0) {
     $uid = $values[0];
   }
   if (!$privacy["public_photo"]["members"][$uid]) {
@@ -405,7 +411,7 @@ function staff_do_photo($ds, $sr, $privacy) {
     return "";
   }
 
-  if ($entry !== false) {
+  if ($entry !== FALSE) {
     $values = @ldap_get_values_len($ds, $entry, "jpegPhoto");
   }
   else {
@@ -413,7 +419,7 @@ function staff_do_photo($ds, $sr, $privacy) {
     return "";
   }
 
-  if ($values !== false && $values["count"]!= 0) {
+  if ($values !== FALSE && $values["count"]!= 0) {
     header('Content-type: image/jpeg');
     print $values[0];
     exit();
@@ -431,9 +437,9 @@ function staff_do_photo($ds, $sr, $privacy) {
  */
 function staff_get_groups($ds, $group) {
   $result = array(
-    descriptions => array(),
-    groups => array(),
-    members => array()
+    'descriptions' => array(),
+    'groups' => array(),
+    'members' => array(),
   );
 
   // security issue: $group is untrusted
@@ -441,14 +447,14 @@ function staff_get_groups($ds, $group) {
   $search = "(&(objectClass=posixGroup)(cn=$group))";
   $basedn = variable_get('staff_basedn_groups', 'dc=example,dc=org');
   $sr = @ldap_search($ds, $basedn, $search, array("description", "gidNumber", "memberUid"));
-  if ($sr === false) {
+  if ($sr === FALSE) {
     drupal_set_message("Unable to search the LDAP server $basedn for $search: ".ldap_error($ds),
                        "error");
     return;
   }
 
   $entry = ldap_first_entry($ds, $sr);
-  while ($entry !== false) {
+  while ($entry !== FALSE) {
     $values = @ldap_get_values($ds, $entry, "description");
     for ($i = 0; $i < $values["count"]; $i = $i + 1) {
       $id = $values[$i];
@@ -480,21 +486,22 @@ function staff_get_groups($ds, $group) {
  * If $type is "photo" and only one result present, use singular display.
  */
 function staff_get_list($ds, $key, $type, $value) {
-  $photo = false;
-  $term = undef;
+  $photo = FALSE;
+  $term = NULL;
+  $content = "";
 
   if ($type == "photo") {
-    $photo = true;
+    $photo = TRUE;
   }
 
   $privacy = array(
-    public_photo => staff_get_groups($ds, "public_photo"),
-    public_email => staff_get_groups($ds, "public_email"),
-    public_telephonenumber => staff_get_groups($ds, "public_telephonenumber"),
-    public_mobile => staff_get_groups($ds, "public_mobile"),
+    'public_photo' => staff_get_groups($ds, "public_photo"),
+    'public_email' => staff_get_groups($ds, "public_email"),
+    'public_telephonenumber' => staff_get_groups($ds, "public_telephonenumber"),
+    'public_mobile' => staff_get_groups($ds, "public_mobile"),
   );
 
-  $request = undef;
+  $request = NULL;
   $search = "(&(objectClass=inetOrgPerson)(!(uid=administrator))(!(uid=root))";
   if ($key == "name") {
     $request = "single";
@@ -590,9 +597,9 @@ function staff_get_list($ds, $key, $type, $value) {
  */
 function is_valid_group($group_name) {
   $valid_groups = variable_get('valid_groups', '');
-  $valid_array = split("[\n\r ]", $valid_groups);
+  $valid_array = mb_split("[\n\r ]", $valid_groups);
 
-  $valid = false;
+  $valid = FALSE;
   for ($i = 0; !$valid && $i < count($valid_array); $i++) {
     $valid = $group_name === $valid_array[$i];
   }
@@ -604,9 +611,9 @@ function is_valid_group($group_name) {
  * Called by Drupal when user retrieves URL under /staff.
  */
 function staff_content() {
-  $ds = false;
-  $r = false;
-  $sr = false;
+  $ds = FALSE;
+  $r = FALSE;
+  $sr = FALSE;
 
   $content = "";
   $server = variable_get('staff_server', 'ldap');
@@ -628,8 +635,8 @@ function staff_content() {
   );
 
   if ($r) {
-    $type = undef;
-    $term = undef;
+    $type = NULL;
+    $term = NULL;
     if (preg_match('/^([0-9a-zA-Z_ ]+)\.jpg$/', arg(2), $matches)) {
       $term = $matches[1];
       $type = "photo";
