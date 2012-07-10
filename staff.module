@@ -422,7 +422,7 @@ function staff_do_photo($ds, $sr, $privacy) {
     return "";
   }
 
-  if ($values !== FALSE && $values["count"]!= 0) {
+  if ($values !== FALSE && $values["count"] != 0) {
     header('Content-type: image/jpeg');
     print $values[0];
     exit();
