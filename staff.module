@@ -69,7 +69,7 @@ function staff_menu() {
     'title' => t('Staff'),
     'callback' => 'staff_content',
     'access' => user_access('access staff content'),
-    'type' => MENU_NORMAL_ITEM
+    'type' => MENU_NORMAL_ITEM,
   );
 
   return $items;
@@ -85,7 +85,7 @@ function staff_admin() {
     '#default_value' => variable_get('staff_server', 'ldap'),
     '#size' => 50,
     '#maxlength' => 50,
-    '#description' => t("The LDAP server")
+    '#description' => t("The LDAP server"),
   );
 
   $form['staff_basedn_users'] = array(
@@ -94,7 +94,7 @@ function staff_admin() {
     '#default_value' => variable_get('staff_basedn_users', 'dc=example,dc=org'),
     '#size' => 50,
     '#maxlength' => 50,
-    '#description' => t("The base DN for all users")
+    '#description' => t("The base DN for all users"),
   );
 
   $form['staff_basedn_groups'] = array(
@@ -103,7 +103,7 @@ function staff_admin() {
     '#default_value' => variable_get('staff_basedn_groups', 'dc=example,dc=org'),
     '#size' => 50,
     '#maxlength' => 50,
-    '#description' => t("The base DN for all groups")
+    '#description' => t("The base DN for all groups"),
   );
 
   $form['valid_groups'] = array(
@@ -111,7 +111,7 @@ function staff_admin() {
     '#title' => t('Valid Groups'),
     '#default_value' => variable_get('valid_groups', ''),
     '#rows' => 7,
-    '#description' => t("Enter valid group names, one per line. No spaces or other special characters in group names.")
+    '#description' => t("Enter valid group names, one per line. No spaces or other special characters in group names."),
   );
 
   return system_settings_form($form);
@@ -124,7 +124,7 @@ function staff_get_expired($ds, $entry) {
   $utc_diff = date('Z');
   $values = @ldap_get_values($ds, $entry, "shadowExpire");
   if ($values === false or $values["count"] == 0) {
-    return (false);
+    return false;
   }
   $expires = $values[0] * 24 * 3600 + $utc_diff;
 
@@ -186,8 +186,9 @@ function staff_do_user($ds, $entry, $fields, $extra, $privacy) {
   $content .= "<table>";
   foreach ($keys as $ldap => $label) {
     $values = @ldap_get_values($ds, $entry, $ldap);
-    if ($values === false or $values["count"] == 0)
+    if ($values === false or $values["count"] == 0) {
       continue;
+    }
 
     $content .= "<tr>";
     $content .= '<td class="label">' . htmlspecialchars($label) . "</td><td>";
@@ -250,8 +251,9 @@ function staff_do_list_user_compact($ds, $entry, $privacy) {
   $nl = "";
   foreach ($keys as $ldap => $label) {
     $values = @ldap_get_values($ds,$entry,$ldap);
-    if ($values === false or $values["count"] == 0)
+    if ($values === false or $values["count"] == 0) {
       continue;
+    }
 
     for ($i = 0; $i < $values["count"]; $i = $i + 1) {
       if ($ldap == "cn") {
@@ -305,8 +307,9 @@ function staff_do_list_user_long($ds, $entry, $privacy) {
   $nl = "<br/>";
   foreach ($keys as $ldap => $label) {
     $values = @ldap_get_values($ds, $entry, $ldap);
-    if ($values === false or $values["count"] == 0)
+    if ($values === false or $values["count"] == 0) {
       continue;
+    }
 
     for ($i = 0; $i < $values["count"]; $i = $i + 1) {
       if ($ldap == "cn") {
@@ -416,8 +419,7 @@ function staff_do_photo($ds, $sr, $privacy) {
     exit();
   }
   else {
-    drupal_set_message("Unable to retrieve jpegPhoto: ".ldap_error($ds),
-                       "error");
+    drupal_set_message("Unable to retrieve jpegPhoto: ".ldap_error($ds), "error");
     return "";
   }
 }
@@ -489,7 +491,7 @@ function staff_get_list($ds, $key, $type, $value) {
     public_photo => staff_get_groups($ds,"public_photo"),
     public_email => staff_get_groups($ds,"public_email"),
     public_telephonenumber => staff_get_groups($ds,"public_telephonenumber"),
-    public_mobile => staff_get_groups($ds,"public_mobile")
+    public_mobile => staff_get_groups($ds,"public_mobile"),
   );
 
   $request = undef;
@@ -540,7 +542,7 @@ function staff_get_list($ds, $key, $type, $value) {
     "telephonenumber",
     "mobile",
     "facsimiletelephonenumber",
-    "mail"
+    "mail",
   );
 
   $basedn = variable_get('staff_basedn_users', 'dc=example,dc=org');
@@ -608,7 +610,7 @@ function staff_content() {
 
   $content = "";
   $server = variable_get('staff_server', 'ldap');
-  $ds = ldap_connect($server);  // must be a valid LDAP server!
+  $ds = ldap_connect($server); // must be a valid LDAP server!
 
   if ($ds) {
     ldap_set_option($ds, LDAP_OPT_PROTOCOL_VERSION, 3);
@@ -622,7 +624,7 @@ function staff_content() {
   $breadcrumb = array();
   $breadcrumb[] = array(
     'path' => 'about/VPAC',
-    'title' => t('About Us')
+    'title' => t('About Us'),
   );
 
   if ($r) {
@@ -641,7 +643,7 @@ function staff_content() {
       $content = staff_get_list($ds, "name", $type, $term);
       $breadcrumb[] = array(
         'path' => '',
-        'title' => t('Staff Member')
+        'title' => t('Staff Member'),
       );
     }
     elseif (arg(1) == "uid") {
@@ -654,14 +656,14 @@ function staff_content() {
       }
       $breadcrumb[] = array(
         'path' => '',
-        'title' => t('Staff Member')
+        'title' => t('Staff Member'),
       );
     }
     elseif (arg(1) == "group" && is_valid_group(arg(2))) {
       $content = staff_get_list($ds, "group", $type, $term);
       $breadcrumb[] = array(
         'path' => '',
-        'title' => t('Staff List')
+        'title' => t('Staff List'),
       );
     }
     elseif (arg(1) == "all") {
