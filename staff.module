@@ -1,21 +1,28 @@
 <?php
 
 /**
+ * @file
  * Written by Brian May 2007: brian@vpac.org
  * Extended (slightly) by David Colls 2008: davidc@vpac.org
  * Trivial ordering modifications by Lev Lafayette 2010: lev@vpac.org
  * Changed breadcrumb path April 1, 2011 Lev Lafayette: lev@vpac.org
  */
 
+/**
+ * Implementation of hook_init().
+ */
 function staff_init() {
   drupal_add_css(drupal_get_path('module', 'staff') .'/staff-style.css');
 }
 
 /**
-* Display help and module information
-* @param section which section of the site we're displaying help
-* @return help text for section
-*/
+ * Implements hook_help.
+ *
+ * Displays help and module information.
+ *
+ * @param section which section of the site we're displaying help
+ * @return help text for section
+ */
 function staff_help($section='') {
 
 	$output = '';
@@ -30,13 +37,16 @@ function staff_help($section='') {
 } // function staff_help
 
 /**
-* Valid permissions for this module
-* @return array An array of valid permissions for the ldap module
-*/
+ * Valid permissions for this module
+ * @return array An array of valid permissions for the ldap module
+ */
 function staff_perm() {
 	return array('access staff content','administer staff content');
 } // function staff_perm()
 
+/**
+ * Implementation of hook_menu().
+ */
 function staff_menu() {
 
 	$items = array();
@@ -62,6 +72,9 @@ function staff_menu() {
 	return $items;
 }
 
+/**
+ * Called by Drupal when user retrieves URL under /admin/config/staff.
+ */
 function staff_admin() {
 
 	$form['staff_server'] = array(
@@ -102,7 +115,9 @@ function staff_admin() {
 	return system_settings_form($form);
 }
 
-// Has this account expired? 
+/**
+ * Has this account expired?
+ */
 function staff_get_expired($ds,$entry) {
 	$utc_diff = date('Z');
 	$values = @ldap_get_values($ds,$entry,"shadowExpire");
@@ -118,7 +133,9 @@ function staff_get_expired($ds,$entry) {
 	}
 }
 
-// Create a link to the photo to this user
+/**
+ * Create a link to the photo to this user
+ */
 function staff_do_photo_link($ds,$entry,$uid,$privacy) {
 	if (!isset($uid)) {
 		return "";
@@ -134,7 +151,9 @@ function staff_do_photo_link($ds,$entry,$uid,$privacy) {
 	return "<img src='" . url($path). "' alt='Staff Photograph'/>";
 }
 
-// Display attributes of a single staff member not in a list
+/**
+ * Display attributes of a single staff member not in a list
+ */
 function staff_do_user($ds,$entry,$fields,$extra,$privacy) {
 	$uid=undef;
 	$values = @ldap_get_values($ds,$entry,"uid");
@@ -196,8 +215,10 @@ function staff_do_user($ds,$entry,$fields,$extra,$privacy) {
 }
 
 
-// Display attributes of a single staff member in a compact list format
-// The compact format does not include a photo and shows all details on one line
+/**
+ * Display attributes of a single staff member in a compact list format
+ * The compact format does not include a photo and shows all details on one line
+ */
 function staff_do_list_user_compact($ds,$entry,$privacy) {
 	$uid=undef;
 	$values = @ldap_get_values($ds,$entry,"uid");
@@ -245,8 +266,10 @@ function staff_do_list_user_compact($ds,$entry,$privacy) {
 	return $content;
 }
 
-// Display attributes of a single staff member in an expanded list format
-// The expanded format includes a photo and further details
+/**
+ * Display attributes of a single staff member in an expanded list format
+ * The expanded format includes a photo and further details
+ */
 function staff_do_list_user_long($ds,$entry,$privacy) {
 	$uid=undef;
 	$values = @ldap_get_values($ds,$entry,"uid");
@@ -294,7 +317,9 @@ function staff_do_list_user_long($ds,$entry,$privacy) {
 	return $content;
 }
 
-// Display a list of staff
+/**
+ * Display a list of staff
+ */
 function staff_do_list($ds,$sr,$type,$privacy) {
 	$content = "";
 	$content_class = ($type == "list_compact")
@@ -320,7 +345,9 @@ function staff_do_list($ds,$sr,$type,$privacy) {
 	return $content;
 }
 
-// Display a single staff member
+/**
+ * Display a single staff member
+ */
 function staff_do_single($ds,$sr,$privacy) {
 	$entry = ldap_first_entry($ds, $sr);
 	
@@ -344,7 +371,9 @@ function staff_do_single($ds,$sr,$privacy) {
 	return $content;
 }
 
-// Display a single photo
+/**
+ * Display a single photo
+ */
 function staff_do_photo($ds,$sr,$privacy) {
 	$entry = ldap_first_entry($ds, $sr);
 
@@ -377,8 +406,10 @@ function staff_do_photo($ds,$sr,$privacy) {
 }
 
 
-// Get all groups with the name $group.
-// Usually should only return one result.
+/**
+ * Get all groups with the name $group. 
+ * Usually should only return one result.
+ */
 function staff_get_groups($ds,$group) {
 	$result = array(
 									descriptions => array(),
@@ -421,15 +452,15 @@ function staff_get_groups($ds,$group) {
 	return ($result);
 }
 
-// staff_get_list
-//
-// retrieve list of type $type when [$key] = $value
-// $key can be "name", "cn", "uid", or "".
-// $type can be "list" or "photo"
-//
-// If $type is "photo" and multiple results present, display error.
-// If $type is "photo" and multiple results present, use list display.
-// If $type is "phtoo" and only one result present, use singular display.
+/**
+ * retrieve list of type $type when [$key] = $value
+ * $key can be "name", "cn", "uid", or "".
+ * $type can be "list" or "photo"
+ *
+ * If $type is "photo" and multiple results present, display error.
+ * If $type is "photo" and multiple results present, use list display.
+ * If $type is "photo" and only one result present, use singular display.
+ */
 function staff_get_list($ds,$key,$type,$value) {
 	$photo = false;
 	$term = undef;
@@ -517,7 +548,9 @@ function staff_get_list($ds,$key,$type,$value) {
 	return $content;
 }
 
-// Test whether we can display the specified group
+/**
+ * Test whether we can display the specified group
+ */
 function is_valid_group($group_name) {
 	$valid_groups = variable_get('valid_groups', '');
 	$valid_array = split("[\n\r ]", $valid_groups);
@@ -530,8 +563,9 @@ function is_valid_group($group_name) {
 	return $valid;
 }
 
-// staff_content
-// Called by Drupal when user retrieves URL under /staff.
+/**
+ * Called by Drupal when user retrieves URL under /staff.
+ */
 function staff_content() {
 	$ds = false;
 	$r = false;
