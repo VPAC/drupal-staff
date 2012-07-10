@@ -121,15 +121,9 @@ function staff_admin() {
 /**
  * Has this account expired?
  */
-function staff_get_expired($ds, $entry) {
-  $utc_diff = date('Z');
-  $values = @ldap_get_values($ds, $entry, "shadowExpire");
-  if ($values === FALSE or $values["count"] == 0) {
-    return FALSE;
-  }
-  $expires = $values[0] * 24 * 3600 + $utc_diff;
-
-  if ($expires <= REQUEST_TIME) {
+function staff_get_expired($ds, $uid) {
+  $groups = staff_get_groups($ds, "vpac");
+  if (!isset($groups["members"][$uid])) {
     return TRUE;
   }
   else {
@@ -158,31 +152,39 @@ function staff_do_photo_link($ds, $entry, $uid, $privacy) {
 /**
  * Display attributes of a single staff member not in a list
  */
-function staff_do_user($ds, $entry, $fields, $extra, $privacy) {
-  $uid = NULL;
-  $values = @ldap_get_values($ds, $entry, "uid");
-  if ($values !== FALSE and $values["count"] > 0) {
-    $uid = $values[0];
-  }
-
+function staff_do_user($ds, $entry, $uid, $expired, $privacy) {
   $content = "";
   $content .= staff_do_photo_link($ds, $entry, $uid, $privacy);
 
-  $keys = array(
-    "cn" => "Name",
-    "title" => "Title",
-  );
+  if (!$expired) {
+    $keys = array(
+      "cn" => "Name",
+      "title" => "Title",
+    );
 
-  if (isset($privacy["public_telephonenumber"]["members"][$uid])) {
-    $keys["telephonenumber"] = "Phone";
-  }
-  if (isset($privacy["public_mobile"]["members"][$uid])) {
-    $keys["mobile"] = "Mobile Phone";
-  }
-  $keys["facsimiletelephonenumber"] = "Fax";
+    if (isset($privacy["public_telephonenumber"]["members"][$uid])) {
+      $keys["telephonenumber"] = "Phone";
+    }
+    if (isset($privacy["public_mobile"]["members"][$uid])) {
+      $keys["mobile"] = "Mobile Phone";
+    }
+    $keys["facsimiletelephonenumber"] = "Fax";
 
-  if (isset($privacy["public_email"]["members"][$uid])) {
-    $keys["mail"] = "Email";
+    if (isset($privacy["public_email"]["members"][$uid])) {
+      $keys["mail"] = "Email";
+    }
+
+    $description = "";
+    $values = @ldap_get_values($ds, $entry, "description");
+    for ($i = 0; $i < $values["count"]; $i = $i + 1) {
+      $description .= $values[$i];
+    }
+  }
+  else {
+    $keys = array(
+      "cn" => "Name",
+    );
+    $description = NULL;
   }
 
   $content .= "<table>";
@@ -218,9 +220,15 @@ function staff_do_user($ds, $entry, $fields, $extra, $privacy) {
     $content .= "</tr>";
   }
 
-  $content .= "$fields";
+  if ($expired) {
+       $content .= '<td class="label">Status</td><td>Expired</td>';
+  }
   $content .= "</table>";
-  $content .= "<p class='staff-end'>$extra</p>";
+
+  if ($description) {
+    $content .= "<p class='staff-end'>$description</p>";
+  }
+
   return $content;
 }
 
@@ -229,13 +237,7 @@ function staff_do_user($ds, $entry, $fields, $extra, $privacy) {
  * Display attributes of a single staff member in a compact list format
  * The compact format does not include a photo and shows all details on one line
  */
-function staff_do_list_user_compact($ds, $entry, $privacy) {
-  $uid = NULL;
-  $values = @ldap_get_values($ds, $entry, "uid");
-  if ($values !== FALSE and $values["count"] > 0) {
-    $uid = $values[0];
-  }
-
+function staff_do_list_user_compact($ds, $entry, $uid, $privacy) {
   $keys = array(
     "cn" => "Name",
     "title" => "Title",
@@ -287,13 +289,7 @@ function staff_do_list_user_compact($ds, $entry, $privacy) {
  * Display attributes of a single staff member in an expanded list format
  * The expanded format includes a photo and further details
  */
-function staff_do_list_user_long($ds, $entry, $privacy) {
-  $uid = NULL;
-  $values = @ldap_get_values($ds, $entry, "uid");
-  if ($values !== FALSE and $values["count"] > 0) {
-    $uid = $values[0];
-  }
-
+function staff_do_list_user_long($ds, $entry, $uid, $privacy) {
   $keys = array(
     "cn" => "Name",
     "title" => "Title",
@@ -355,11 +351,16 @@ function staff_do_list($ds, $sr, $type, $privacy) {
 
   $odd = TRUE;
   while ($entry !== FALSE) {
-    if (!staff_get_expired($ds, $entry)) {
+    $values = @ldap_get_values($ds, $entry, "uid");
+    if ($values !== FALSE and $values["count"] > 0) {
+      $uid = $values[0];
+    }
+
+    if (!staff_get_expired($ds, $uid)) {
       $content .= "<li class=" . ($odd ? "odd" : "even") . ">";
       $content .= ($type == "list_compact")
-            ? staff_do_list_user_compact($ds, $entry, $privacy)
-            : staff_do_list_user_long($ds, $entry, $privacy);
+            ? staff_do_list_user_compact($ds, $entry, $uid, $privacy)
+            : staff_do_list_user_long($ds, $entry, $uid, $privacy);
       $content .= "</li>";
     }
     $odd = !$odd;
@@ -377,21 +378,14 @@ function staff_do_single($ds, $sr, $privacy) {
   $content = "";
 
   while ($entry !== FALSE) {
-    $fields = "";
-
-    if (staff_get_expired($ds, $entry)) {
-      $fields .= "<dt>Status</dt><dd>Expired</dd>";
+    $values = @ldap_get_values($ds, $entry, "uid");
+    if ($values !== FALSE and $values["count"] > 0) {
+      $uid = $values[0];
     }
 
-    $extra = "";
-    $values = @ldap_get_values($ds, $entry, "description");
-    for ($i = 0; $i < $values["count"]; $i = $i + 1) {
-      //$extra .= htmlspecialchars($values[$i]);
-      $extra .= $values[$i];
-    }
-
+    $expired = staff_get_expired($ds, $uid);
     $content .= "<div class='staff-single'>";
-    $content .= staff_do_user($ds, $entry, $fields, $extra, $privacy);
+    $content .= staff_do_user($ds, $entry, $uid, $expired, $privacy);
     $content .= "</div>";
     $entry = ldap_next_entry($ds, $entry);
   }
@@ -657,13 +651,7 @@ function staff_content() {
       );
     }
     elseif (arg(1) == "uid") {
-      $groups = staff_get_groups($ds, "vpac");
-      if (isset($groups["members"][$term])) {
-        $content = staff_get_list($ds, "uid", $type, $term);
-      }
-      else {
-        $content = "<p>No results found</p>";
-      }
+      $content = staff_get_list($ds, "uid", $type, $term);
       $breadcrumb[] = array(
         'path' => '',
         'title' => t('Staff Member'),
