@@ -138,14 +138,13 @@ function staff_do_photo_link($ds, $entry, $uid, $privacy) {
   if (!isset($uid)) {
     return "";
   }
-  if (!isset($privacy["public_photo"]["members"][$uid])) {
-    return "";
+  $path="sites/default/files/nonpicture-03.png";
+  if (isset($privacy["public_photo"]["members"][$uid])) {
+    $photo = @ldap_get_values_len($ds, $entry, "jpegPhoto");
+	 if ($photo !== FALSE and $photo["count"] > 0) {
+	   $path = "staff/uid/" . $uid . ".jpg";
+    }
   }
-  $photo = @ldap_get_values_len($ds, $entry, "jpegPhoto");
-  if ($photo === FALSE or $photo["count"] == 0) {
-    return "";
-  }
-  $path = "staff/uid/" . $uid . ".jpg";
   return "<img src='" . url($path) . "' alt='Staff Photograph'/>";
 }
 
