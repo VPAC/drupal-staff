@@ -626,10 +626,9 @@ function staff_content() {
   }
 
   $breadcrumb = array();
-  $breadcrumb[] = array(
-    'path' => 'about/VPAC',
-    'title' => t('About Us'),
-  );
+  $breadcrumb[] = l(t('Home'), '<front>');
+  $breadcrumb[] = l(t('About Us'), 'about');
+  $breadcrumb[] = l(t('Our Team'), 'about/ourteam');
 
   if ($r) {
     $type = NULL;
@@ -645,31 +644,15 @@ function staff_content() {
 
     if (arg(1) == "name") {
       $content = staff_get_list($ds, "name", $type, $term);
-      $breadcrumb[] = array(
-        'path' => '',
-        'title' => t('Staff Member'),
-      );
     }
     elseif (arg(1) == "uid") {
       $content = staff_get_list($ds, "uid", $type, $term);
-      $breadcrumb[] = array(
-        'path' => '',
-        'title' => t('Staff Member'),
-      );
     }
     elseif (arg(1) == "group" && is_valid_group(arg(2))) {
       $content = staff_get_list($ds, "group", $type, $term);
-      $breadcrumb[] = array(
-        'path' => '',
-        'title' => t('Staff List'),
-      );
     }
     elseif (arg(1) == "all") {
       $content .= staff_get_list($ds, "group", "list_compact", "vpac");
-      $breadcrumb[] = array(
-        'path' => '',
-        'title' => t('All Staff'),
-      );
     }
     else {
       $content .= '<div class="staff-error">';
