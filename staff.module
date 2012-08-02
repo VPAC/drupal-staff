@@ -403,8 +403,8 @@ function staff_do_photo($ds, $sr, $privacy) {
   if ($values !== FALSE and $values["count"] > 0) {
     $uid = $values[0];
   }
-  if (!$privacy["public_photo"]["members"][$uid]) {
-    drupal_set_message(check_plain("Unable to retrieve user (privacy): " . ldap_error($ds)), "error");
+  if (!isset($privacy["public_photo"]["members"][$uid])) {
+    drupal_set_message(check_plain("Unable to retrieve user (privacy)"), "error");
     return "";
   }
 
