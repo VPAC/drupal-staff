@@ -15,6 +15,14 @@ function staff_init() {
   drupal_add_css(drupal_get_path('module', 'staff') . '/staff-style.css');
 }
 
+function staff_nl2p($string, $class='') {
+$class_attr = ($class!='') ? ' class="'.$class.'"' : '';
+return
+    '<p'.$class_attr.'>'
+     .preg_replace('#(<br\s*?/?>\s*?){2,}#', '</p>'."\n".'<p'.$class_attr.'>', nl2br($string, true))
+     .'</p>';
+}
+
 /**
  * Implements hook_help.
  *
@@ -225,7 +233,7 @@ function staff_do_user($ds, $entry, $uid, $expired, $privacy) {
   $content .= "</table>";
 
   if ($description) {
-    $content .= "<p class='staff-end'>" . htmlspecialchars($description) . "</p>";
+    $content .= staff_nl2p(htmlspecialchars($description), "staff-end");
   }
 
   return $content;
